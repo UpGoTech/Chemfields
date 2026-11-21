@@ -1,0 +1,48 @@
+# Publishes the static site to GitHub Pages on every push to master.
+# Custom domain: chemfields.com (CNAME written into the artifact).
+#
+# After first deploy: Settings → Pages → Custom domain → chemfields.com
+# DNS: CNAME www → upgotech.github.io  (plus apex A/AAAA records if needed)
+# Then enable Enforce HTTPS once DNS is verified.
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add CNAME for custom domain
+        run: echo 'chemfields.com' > CNAME
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
